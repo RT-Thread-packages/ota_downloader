@@ -16,20 +16,17 @@
 #include "webclient.h"
 #include <fal.h>
 
-#undef DBG_SECTION_NAME
-#undef DBG_LEVEL
-#undef DBG_COLOR
-#undef DBG_ENABLE
-
 #define DBG_ENABLE
 #define DBG_SECTION_NAME          "http_ota"
-#ifdef HTTP_OTA_DEBUG
+#ifdef OTA_DOWNLOADER_DEBUG
 #define DBG_LEVEL                 DBG_LOG
 #else
 #define DBG_LEVEL                 DBG_INFO
 #endif 
 #define DBG_COLOR
 #include <rtdbg.h>
+
+#ifdef PKG_USING_HTTP_OTA
 
 #define HTTP_OTA_BUFF_LEN         4096
 #define GET_HEADER_BUFSZ          1024
@@ -209,4 +206,6 @@ void http_ota(uint8_t argc, char **argv)
 /**
  * msh />http_ota [url]
 */
-MSH_CMD_EXPORT(http_ota, OTA by http client: http_ota [url]);
+MSH_CMD_EXPORT(http_ota, Use HTTP to download the firmware);
+
+#endif /* PKG_USING_HTTP_OTA */

@@ -18,13 +18,15 @@
 
 #define DBG_ENABLE
 #define DBG_SECTION_NAME               "ymodem"
-#ifdef YMODEM_DEBUG
+#ifdef OTA_DOWNLOADER_DEBUG
 #define DBG_LEVEL                      DBG_LOG
 #else
 #define DBG_LEVEL                      DBG_INFO
 #endif 
 #define DBG_COLOR
 #include <rtdbg.h>
+
+#ifdef PKG_USING_YMODEM_OTA
 
 static size_t update_file_total_size, update_file_cur_size;
 
@@ -85,7 +87,7 @@ void ymodem_ota(uint8_t argc, char **argv)
 {
     struct rym_ctx rctx;
 
-    rt_kprintf("Waring: Ymodem has started! This operator will not recovery.\n");
+    rt_kprintf("Warning: Ymodem has started! This operator will not recovery.\n");
     rt_kprintf("Please select the ota firmware file and use Ymodem to send.\n");
 
     if (!rym_recv_on_device(&rctx, rt_console_get_device(), RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
@@ -115,4 +117,6 @@ void ymodem_ota(uint8_t argc, char **argv)
 /**
  * msh />ymodem_ota
 */
-MSH_CMD_EXPORT(ymodem_ota, OTA by ymodem);
+MSH_CMD_EXPORT(ymodem_ota, Use Y-MODEM to download the firmware);
+
+#endif /* PKG_USING_YMODEM_OTA */

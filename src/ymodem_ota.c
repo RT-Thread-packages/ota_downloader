@@ -133,9 +133,9 @@ void ymodem_ota(uint8_t argc, char **argv)
             rt_thread_delay(RT_TICK_PER_SECOND);
             rt_kprintf("Update firmware fail.\n");
         }
-
-        return;
     }
+
+    return;
 }
 /**
  * msh />ymodem_ota

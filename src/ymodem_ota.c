@@ -105,7 +105,7 @@ void ymodem_ota(uint8_t argc, char **argv)
                 recv_partition = save_partition_name;
             }
         }else{
-            rt_kprintf("Usage: ymodem_ota -p partitonname.\n");
+            rt_kprintf("Usage: ymodem_ota -p <partitonname>.\n");
             return;
         }
 

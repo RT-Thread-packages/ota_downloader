@@ -102,8 +102,8 @@ void ymodem_ota(uint8_t argc, char **argv)
                 rt_kprintf("Usage: ymodem_ota -p <partiton name>.\n");
                 return;
             } else {
-                char *save_partition_name = argv[2];
-                recv_partition = save_partition_name;
+                /* change default partition to save firmware */
+                recv_partition = argv[2];  
             }
         }else{
             rt_kprintf("Usage: ymodem_ota -p <partiton name>.\n");

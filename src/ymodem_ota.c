@@ -26,12 +26,12 @@
 #define DBG_COLOR
 #include <rtdbg.h>
 
-static char* recv_partition = "download";
-
 #ifdef PKG_USING_YMODEM_OTA
 
-static size_t update_file_total_size, update_file_cur_size;
+#define DEFAULT_DOWNLOAD_PART "download"
 
+static char* recv_partition = DEFAULT_DOWNLOAD_PART;
+static size_t update_file_total_size, update_file_cur_size;
 static const struct fal_partition * dl_part = RT_NULL;
 
 static enum rym_code ymodem_on_begin(struct rym_ctx *ctx, rt_uint8_t *buf, rt_size_t len)
@@ -91,6 +91,7 @@ void ymodem_ota(uint8_t argc, char **argv)
 
     if (argc < 2)
     {
+        recv_partition = DEFAULT_DOWNLOAD_PART;
         rt_kprintf("Default save firmware on download partition.\n");
     }
     else
@@ -98,14 +99,14 @@ void ymodem_ota(uint8_t argc, char **argv)
         const char *operator = argv[1];
         if (!strcmp(operator, "-p")) {
             if (argc < 3) {
-                rt_kprintf("Usage: ymodem_ota -p <partitonname>.\n");
+                rt_kprintf("Usage: ymodem_ota -p <partiton name>.\n");
                 return;
             } else {
                 char *save_partition_name = argv[2];
                 recv_partition = save_partition_name;
             }
         }else{
-            rt_kprintf("Usage: ymodem_ota -p <partitonname>.\n");
+            rt_kprintf("Usage: ymodem_ota -p <partiton name>.\n");
             return;
         }
 

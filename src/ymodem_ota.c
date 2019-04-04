@@ -109,31 +109,31 @@ void ymodem_ota(uint8_t argc, char **argv)
             rt_kprintf("Usage: ymodem_ota -p <partiton name>.\n");
             return;
         }
+    }
 
-        rt_kprintf("Warning: Ymodem has started! This operator will not recovery.\n");
-        rt_kprintf("Please select the ota firmware file and use Ymodem to send.\n");
+    rt_kprintf("Warning: Ymodem has started! This operator will not recovery.\n");
+    rt_kprintf("Please select the ota firmware file and use Ymodem to send.\n");
 
-        if (!rym_recv_on_device(&rctx, rt_console_get_device(), RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
-                                ymodem_on_begin, ymodem_on_data, NULL, RT_TICK_PER_SECOND))
-        {
-            rt_kprintf("Download firmware to flash success.\n");
-            rt_kprintf("System now will restart...\r\n");
+    if (!rym_recv_on_device(&rctx, rt_console_get_device(), RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
+                            ymodem_on_begin, ymodem_on_data, NULL, RT_TICK_PER_SECOND))
+    {
+        rt_kprintf("Download firmware to flash success.\n");
+        rt_kprintf("System now will restart...\r\n");
 
-            /* wait some time for terminal response finish */
-            rt_thread_delay(rt_tick_from_millisecond(200));
+        /* wait some time for terminal response finish */
+        rt_thread_delay(rt_tick_from_millisecond(200));
 
-            /* Reset the device, Start new firmware */
-            extern void rt_hw_cpu_reset(void);
-            rt_hw_cpu_reset();
-            /* wait some time for terminal response finish */
-            rt_thread_delay(rt_tick_from_millisecond(200));
-        }
-        else
-        {
-            /* wait some time for terminal response finish */
-            rt_thread_delay(RT_TICK_PER_SECOND);
-            rt_kprintf("Update firmware fail.\n");
-        }
+        /* Reset the device, Start new firmware */
+        extern void rt_hw_cpu_reset(void);
+        rt_hw_cpu_reset();
+        /* wait some time for terminal response finish */
+        rt_thread_delay(rt_tick_from_millisecond(200));
+    }
+    else
+    {
+        /* wait some time for terminal response finish */
+        rt_thread_delay(RT_TICK_PER_SECOND);
+        rt_kprintf("Update firmware fail.\n");
     }
 
     return;

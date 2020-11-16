@@ -1,5 +1,7 @@
 # OTA Downloader
 
+[Chinese](README_ZH.md) | English
+
 ## 1. Introduction
 
 This software package is a firmware downloader for OTA upgrade. The downloader provides multiple firmware download methods. Developers can flexibly choose the upgrade method according to their own needs. Each upgrade method only needs to call a function or command once. The currently supported download methods are as follows:

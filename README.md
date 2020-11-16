@@ -1,80 +1,80 @@
 # OTA Downloader
 
-## 1、介绍
+## 1. Introduction
 
-本软件包是用于 OTA 升级的固件下载器，该下载器提供多种固件下载方式。开发者可以根据自己的需求灵活选择升级方式，每种升级方式都只需调用一次函数或者命令就可实现，目前支持的下载方式如下所示：
+This software package is a firmware downloader for OTA upgrade. The downloader provides multiple firmware download methods. Developers can flexibly choose the upgrade method according to their own needs. Each upgrade method only needs to call a function or command once. The currently supported download methods are as follows:
 
- - HTTP/HTTPS 协议下载固件
- - Ymodem 协议下载固件
+- HTTP/HTTPS protocol download firmware
+- Ymodem protocol download firmware
 
-### 1.1 许可证
+### 1.1 License
 
-OTA Downloader package 遵循 Apache2.0 许可，详见 `LICENSE` 文件。
+OTA Downloader package complies with Apache2.0 license, please refer to `LICENSE` file for details.
 
-### 1.2 依赖
+### 1.2 Dependency
 
 - RT-Thread 3.0+
-- FAL 软件包支持
-- Ymodem 下载方式依赖于 Ymodem 组件
-- HTTP/HTTPS 下载方式依赖于 webclient 软件包
+- FAL package support
+- Ymodem download method depends on Ymodem component
+- HTTP/HTTPS download method depends on webclient software package
 
-## 2、如何打开 OTA Downloader
+## 2. How to open OTA Downloader
 
-使用 OTA downloader package 需要在 RT-Thread 的包管理器中选择它，具体路径如下：
+To use OTA downloader package, you need to select it in the package manager of RT-Thread. The specific path is as follows:
 
 ```
 RT-Thread online packages
-    IoT - internet of things  --->
-        [*]  The firmware downloader which using on RT-Thread OTA component  --->
-            [*]  Enable OTA downloader debug
-            [*]  Enable HTTP/HTTPS OTA
+    IoT-internet of things --->
+        [*] The firmware downloader which using on RT-Thread OTA component --->
+            [*] Enable OTA downloader debug
+            [*] Enable HTTP/HTTPS OTA
                 (http://xxx/xxx/rtthread.rbl) HTTP OTA URL
-            [*]  Enable Ymodem OTA
+            [*] Enable Ymodem OTA
 ```
 
-软件包选项的详细说明如下图：
+The detailed description of the package options is as follows:
 
-| 选项 | 说明 |
+| Option | Description |
 |-|-|
-| Enable OTA downloader debug | 使能固件下载器 debug 模式 |
-| Enable HTTP/HTTPS OTA | 使能 HTTP/HTTPS 协议下载固件功能 |
-| Enable Ymodem OTA | 使能 Ymodem 协议下载固件功能 |
+| Enable OTA downloader debug | Enable firmware downloader debug mode |
+| Enable HTTP/HTTPS OTA | Enable HTTP/HTTPS protocol download firmware function |
+| Enable Ymodem OTA | Enable Ymodem protocol download firmware function |
 
-选择完自己需要的选项后使用 RT-Thread 的包管理器自动更新，或者使用 `pkgs --update` 命令更新包到 BSP 中。
+After selecting the options you need, use RT-Thread's package manager to automatically update, or use the `pkgs --update` command to update the package to the BSP.
 
-## 3、使用 OTA Downloader
+## 3. Use OTA Downloader
 
-在打开 OTA downloader package ，选中相应的功能选项后，当进行 BSP 编译时，它会被加入到 BSP 工程中进行编译。
-烧录程序到目标开发板，用户可在 FinSH 终端找到对应的命令。目前软件包支持的升级方式如下表：
+After opening the OTA downloader package and selecting the corresponding function option, it will be added to the BSP project for compilation when the BSP is compiled.
+Burn the program to the target development board, and the user can find the corresponding command in the FinSH terminal. The upgrade methods currently supported by the software package are as follows:
 
-| 功能 | 函数调用 | 执行命令 |
+| Function | Function call | Execute command |
 |---|---|---|
-| 使用 HTTP/HTTPS 协议固件升级 | `void http_ota(uint8_t argc, char **argv)` | `http_ota` |
-| 使用 Ymodem 协议固件升级 | `void ymodem_ota(uint8_t argc, char **argv)` | `ymodem_ota` |
+| Use HTTP/HTTPS protocol firmware upgrade | `void http_ota(uint8_t argc, char **argv)` | `http_ota` |
+| Use Ymodem protocol firmware upgrade | `void ymodem_ota(uint8_t argc, char **argv)` | `ymodem_ota` |
 
-### 3.1 Ymodem 协议固件升级命令行演示
+### 3.1 Ymodem protocol firmware upgrade command line demonstration
 
-推荐使用支持 Ymodem 协议的 Xshell 。在终端输入 `ymodem_ota` 命令后，鼠标右键然后在菜单栏找到用 YMODEM 发送选项发送文件。具体步骤如下图：
+It is recommended to use Xshell which supports Ymodem protocol. After entering the `ymodem_ota` command in the terminal, right-click the mouse and find the YMODEM send option to send the file in the menu bar. The specific steps are as follows:
 
 ![ymodem_ota](docs/figures/ymodem_ota.png)
 
-### 3.2 HTTP/HTTPS 协议固件升级命令行演示
+### 3.2 HTTP/HTTPS protocol firmware upgrade command line demonstration
 
-在终端输入 `http_ota http://xxx/xxx/rtthreadf.rbl` 命令，执行该命令后将会从链接 `http://xxx/xxx/rtthreadf.rbl` 处下载固件。具体步骤如下图所示：
+Enter the `http_ota http://xxx/xxx/rtthreadf.rbl` command in the terminal. After executing the command, the firmware will be downloaded from the link `http://xxx/xxx/rtthreadf.rbl`. The specific steps are shown in the figure below:
 
 ![http_ota](docs/figures/http_ota.png)
 
-## 4、注意事项
+## 4. Matters needing attention
 
- 1. 确保 FAL 中有 downloader 分区。
- 2. Ymodem 协议升级固件时，请使用支持 Ymodem 协议的工具。
- 3. HTTP/HTTPS 协议升级固件时，需确保远端链接地址可用。
+ 1. Make sure there is a downloader partition in the FAL.
+ 2. When upgrading firmware with Ymodem protocol, please use tools that support Ymodem protocol.
+ 3. When upgrading the firmware with HTTP/HTTPS protocol, make sure that the remote link address is available.
 
-## 5、参考资料
+## 5. Reference materials
 
-> 《RT-Thread OTA 用户手册》: docs/RT-Thread-OTA 用户手册.pdf
+> "RT-Thread OTA User Manual": docs/RT-Thread-OTA User Manual.pdf
 
-## 6、联系方式 & 感谢
+## 6. Contact & Thanks
 
-* 维护：RT-Thread 开发团队
-* 主页：https://github.com/RT-Thread-packages/ota_downloader
+* Maintenance: RT-Thread development team
+* Homepage: https://github.com/RT-Thread-packages/ota_downloader

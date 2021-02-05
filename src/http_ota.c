@@ -168,9 +168,15 @@ static int http_ota_fw_download(const char* uri)
     if (total_length == file_size)
     {
         if (session != RT_NULL)
+        {
             webclient_close(session);
+            session = RT_NULL;
+        }
         if (buffer_read != RT_NULL)
+        {
             web_free(buffer_read);
+            buffer_read = RT_NULL;
+        }
 
         LOG_I("Download firmware to flash success.");
         LOG_I("System now will restart...");

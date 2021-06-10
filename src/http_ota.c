@@ -118,6 +118,7 @@ static int http_ota_fw_download(const char* uri)
         goto __exit;
     }
     LOG_I("OTA file size is (%d)", file_size);
+    LOG_I("");
 
     /* Get download partition information and erase download partition data */
     if ((dl_part = fal_partition_find("download")) == RT_NULL)

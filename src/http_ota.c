@@ -67,8 +67,7 @@ static void print_progress(size_t cur_size, size_t total_size)
 
     progress_sign[sizeof(progress_sign) - 1] = '\0';
 
-    LOG_I("\033[2A");
-    LOG_I("Download: [%s] %d%%", progress_sign, per);
+    LOG_I("Download: [%s] %03d%%\033[1A", progress_sign, per);
 }
 
 /* handle function, you can store data and so on */
@@ -118,7 +117,7 @@ static int http_ota_fw_download(const char* uri)
         goto __exit;
     }
     LOG_I("OTA file size is (%d)", file_size);
-    LOG_I("");
+    LOG_I("\033[1A");
 
     /* Get download partition information and erase download partition data */
     if ((dl_part = fal_partition_find("download")) == RT_NULL)
@@ -155,6 +154,7 @@ static int http_ota_fw_download(const char* uri)
             session = RT_NULL;
         }
 
+        LOG_I("\033[0B");
         LOG_I("Download firmware to flash success.");
         LOG_I("System now will restart...");
 

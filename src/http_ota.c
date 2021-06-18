@@ -36,6 +36,10 @@
 #define HTTP_OTA_URL              PKG_HTTP_OTA_URL
 
 /* the address offset of download partition */
+#ifndef PKG_USING_FAL
+#error "Please enable and confirgure FAL part."
+#endif /* PKG_USING_FAL */
+const struct fal_partition * dl_part = RT_NULL;
 static int begin_offset = 0;
 static int file_size = 0;
 
@@ -84,13 +88,14 @@ static int http_ota_shard_download_handle(char *buffer, int length)
 
     print_progress(begin_offset, file_size);
     rt_free(buffer);
+
+    return RT_EOK;
 }
 
 static int http_ota_fw_download(const char* uri)
 {
     int ret = RT_EOK;
     struct webclient_session* session = RT_NULL;
-    const struct fal_partition * dl_part = RT_NULL;
 
     /* create webclient session and set header response size */
     session = webclient_session_create(GET_HEADER_BUFSZ);

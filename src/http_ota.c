@@ -177,6 +177,7 @@ static int http_ota_fw_download(const char* uri)
 __exit:
     if (session != RT_NULL)
         webclient_close(session);
+    begin_offset = 0;
 
     return ret;
 }

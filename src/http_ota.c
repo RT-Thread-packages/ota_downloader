@@ -22,18 +22,26 @@
 #define DBG_LEVEL                 DBG_LOG
 #else
 #define DBG_LEVEL                 DBG_INFO
-#endif 
+#endif
 #define DBG_COLOR
 #include <rtdbg.h>
 
 #ifdef PKG_USING_HTTP_OTA
 
-#define HTTP_OTA_BUFF_LEN         4096
-#define GET_HEADER_BUFSZ          1024
-#define GET_RESP_BUFSZ            1024
+#define HTTP_OTA_BUFF_LEN         1024
+#define GET_HEADER_BUFSZ          512
+#define GET_RESP_BUFSZ            512
 #define HTTP_OTA_DL_DELAY         (10 * RT_TICK_PER_SECOND)
 
 #define HTTP_OTA_URL              PKG_HTTP_OTA_URL
+
+/* the address offset of download partition */
+#ifndef PKG_USING_FAL
+#error "Please enable and confirgure FAL part."
+#endif /* PKG_USING_FAL */
+const struct fal_partition * dl_part = RT_NULL;
+static int begin_offset = 0;
+static int file_size = 0;
 
 static void print_progress(size_t cur_size, size_t total_size)
 {
@@ -63,17 +71,31 @@ static void print_progress(size_t cur_size, size_t total_size)
 
     progress_sign[sizeof(progress_sign) - 1] = '\0';
 
-    LOG_I("\033[2A");
-    LOG_I("Download: [%s] %d%%", progress_sign, per);
+    LOG_I("Download: [%s] %03d%%\033[1A", progress_sign, per);
+}
+
+/* handle function, you can store data and so on */
+static int http_ota_shard_download_handle(char *buffer, int length)
+{
+    /* Write the data to the corresponding partition address */
+    if (fal_partition_write(dl_part, begin_offset, buffer, length) < 0)
+    {
+        LOG_E("Firmware download failed! Partition (%s) write data error!", dl_part->name);
+        ret = -RT_ERROR;
+        goto __exit;
+    }
+    begin_offset += length;
+
+    print_progress(begin_offset, file_size);
+    rt_free(buffer);
+
+    return RT_EOK;
 }
 
 static int http_ota_fw_download(const char* uri)
 {
-    int ret = 0, resp_status;
-    int file_size = 0, length, total_length = 0;
-    rt_uint8_t *buffer_read = RT_NULL;
+    int ret = RT_EOK;
     struct webclient_session* session = RT_NULL;
-    const struct fal_partition * dl_part = RT_NULL;
 
     /* create webclient session and set header response size */
     session = webclient_session_create(GET_HEADER_BUFSZ);
@@ -84,16 +106,8 @@ static int http_ota_fw_download(const char* uri)
         goto __exit;
     }
 
-    /* send GET request by default header */
-    if ((resp_status = webclient_get(session, uri)) != 200)
-    {
-        LOG_E("webclient GET request failed, response(%d) error.", resp_status);
-        ret = -RT_ERROR;
-        goto __exit;
-    }
-
-    file_size = webclient_content_length_get(session);
-    rt_kprintf("http file_size:%d\n",file_size);
+    /* get the real data length */
+    webclient_shard_head_function(session, uri, &file_size);
 
     if (file_size == 0)
     {
@@ -107,6 +121,8 @@ static int http_ota_fw_download(const char* uri)
         ret = -RT_ERROR;
         goto __exit;
     }
+    LOG_I("OTA file size is (%d)", file_size);
+    LOG_I("\033[1A");
 
     /* Get download partition information and erase download partition data */
     if ((dl_part = fal_partition_find("download")) == RT_NULL)
@@ -126,58 +142,24 @@ static int http_ota_fw_download(const char* uri)
     }
     LOG_I("Erase flash (%s) partition success!", dl_part->name);
 
-    buffer_read = web_malloc(HTTP_OTA_BUFF_LEN);
-    if (buffer_read == RT_NULL)
-    {
-        LOG_E("No memory for http ota!");
-        ret = -RT_ERROR;
-        goto __exit;
-    }
-    memset(buffer_read, 0x00, HTTP_OTA_BUFF_LEN);
+    /* register the handle function, you can handle data in the function */
+    webclient_register_shard_position_function(session, http_ota_shard_download_handle);
 
-    LOG_I("OTA file size is (%d)", file_size);
+    /* the "memory size" that you can provide in the project and uri */
+    ret = webclient_shard_position_function(session, uri, begin_offset, file_size, HTTP_OTA_BUFF_LEN);
 
-    do
-    {
-        length = webclient_read(session, buffer_read, file_size - total_length > HTTP_OTA_BUFF_LEN ?
-                            HTTP_OTA_BUFF_LEN : file_size - total_length);   
-        if (length > 0)
-        {
-            /* Write the data to the corresponding partition address */
-            if (fal_partition_write(dl_part, total_length, buffer_read, length) < 0)
-            {
-                LOG_E("Firmware download failed! Partition (%s) write data error!", dl_part->name);
-                ret = -RT_ERROR;
-                goto __exit;
-            }
-            total_length += length;
+    /* clear the handle function */
+    webclient_register_shard_position_function(session, RT_NULL);
 
-            print_progress(total_length, file_size);
-        }
-        else
-        {
-            LOG_E("Exit: server return err (%d)!", length);
-            ret = -RT_ERROR;
-            goto __exit;
-        }
-
-    } while(total_length != file_size);
-
-    ret = RT_EOK;
-
-    if (total_length == file_size)
+    if (ret == RT_EOK)
     {
         if (session != RT_NULL)
         {
             webclient_close(session);
             session = RT_NULL;
         }
-        if (buffer_read != RT_NULL)
-        {
-            web_free(buffer_read);
-            buffer_read = RT_NULL;
-        }
 
+        LOG_I("\033[0B");
         LOG_I("Download firmware to flash success.");
         LOG_I("System now will restart...");
 
@@ -187,12 +169,15 @@ static int http_ota_fw_download(const char* uri)
         extern void rt_hw_cpu_reset(void);
         rt_hw_cpu_reset();
     }
+    else
+    {
+        LOG_E("Download firmware failed.");
+    }
 
 __exit:
     if (session != RT_NULL)
         webclient_close(session);
-    if (buffer_read != RT_NULL)
-        web_free(buffer_read);
+    begin_offset = 0;
 
     return ret;
 }

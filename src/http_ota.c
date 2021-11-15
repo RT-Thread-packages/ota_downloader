@@ -77,6 +77,7 @@ static void print_progress(size_t cur_size, size_t total_size)
 /* handle function, you can store data and so on */
 static int http_ota_shard_download_handle(char *buffer, int length)
 {
+    int ret = RT_EOK;
     /* Write the data to the corresponding partition address */
     if (fal_partition_write(dl_part, begin_offset, buffer, length) < 0)
     {
@@ -87,9 +88,10 @@ static int http_ota_shard_download_handle(char *buffer, int length)
     begin_offset += length;
 
     print_progress(begin_offset, file_size);
-    rt_free(buffer);
 
-    return RT_EOK;
+__exit:
+    rt_free(buffer);
+    return ret;
 }
 
 static int http_ota_fw_download(const char* uri)

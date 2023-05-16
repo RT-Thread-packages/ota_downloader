@@ -10,6 +10,7 @@
  */
 
 #include <rtthread.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <finsh.h>
@@ -30,9 +31,9 @@
 
 #define DEFAULT_DOWNLOAD_PART "download"
 
-static char* recv_partition = DEFAULT_DOWNLOAD_PART;
 static size_t update_file_total_size, update_file_cur_size;
 static const struct fal_partition * dl_part = RT_NULL;
+static uint8_t enable_output_log = 0;
 
 static enum rym_code ymodem_on_begin(struct rym_ctx *ctx, rt_uint8_t *buf, rt_size_t len)
 {
@@ -42,29 +43,23 @@ static enum rym_code ymodem_on_begin(struct rym_ctx *ctx, rt_uint8_t *buf, rt_si
     file_name = (char *)&buf[0];
     file_size = (char *)&buf[rt_strlen(file_name) + 1];
     update_file_total_size = atol(file_size);
-    rt_kprintf("Ymodem file_size:%d\n", update_file_total_size);
+    if (enable_output_log) {rt_kprintf("Ymodem file_size:%d\n", update_file_total_size);}
 
     update_file_cur_size = 0;
 
     /* Get download partition information and erase download partition data */
-    if ((dl_part = fal_partition_find(recv_partition)) == RT_NULL)
-    {
-        LOG_E("Firmware download failed! Partition (%s) find error!", recv_partition);
-        return RYM_CODE_CAN;
-    }
-
     if (update_file_total_size > dl_part->len)
     {
-        LOG_E("Firmware is too large! File size (%d), '%s' partition size (%d)", update_file_total_size, recv_partition, dl_part->len);
+        if (enable_output_log) {LOG_E("Firmware is too large! File size (%d), '%s' partition size (%d)", update_file_total_size, dl_part->name, dl_part->len);}
         return RYM_CODE_CAN;
     }
 
-    LOG_I("Start erase. Size (%d)", update_file_total_size);
+    if (enable_output_log) {LOG_I("Start erase. Size (%d)", update_file_total_size);}
 
     /* erase DL section */
     if (fal_partition_erase(dl_part, 0, update_file_total_size) < 0)
     {
-        LOG_E("Firmware download failed! Partition (%s) erase error!", dl_part->name);
+        if (enable_output_log) {LOG_E("Firmware download failed! Partition (%s) erase error!", dl_part->name);}
         return RYM_CODE_CAN;
     }
 
@@ -76,7 +71,7 @@ static enum rym_code ymodem_on_data(struct rym_ctx *ctx, rt_uint8_t *buf, rt_siz
     /* write data of application to DL partition  */
     if (fal_partition_write(dl_part, update_file_cur_size, buf, len) < 0)
     {
-        LOG_E("Firmware download failed! Partition (%s) write data error!", dl_part->name);
+        if (enable_output_log) {LOG_E("Firmware download failed! Partition (%s) write data error!", dl_part->name);}
         return RYM_CODE_CAN;
     }
 
@@ -88,33 +83,59 @@ static enum rym_code ymodem_on_data(struct rym_ctx *ctx, rt_uint8_t *buf, rt_siz
 void ymodem_ota(uint8_t argc, char **argv)
 {
     struct rym_ctx rctx;
-
-    if (argc < 2)
+    const char str_usage[] = "Usage: ymodem_ota -p <partiton name> -t <device name>.\n";
+    int i;
+    char* recv_partition = DEFAULT_DOWNLOAD_PART;
+    rt_device_t dev = rt_console_get_device();
+    enable_output_log = 0;
+    
+    for (i=1; i<argc;)
     {
-        recv_partition = DEFAULT_DOWNLOAD_PART;
-        rt_kprintf("Default save firmware on download partition.\n");
-    }
-    else
-    {
-        const char *operator = argv[1];
-        if (!strcmp(operator, "-p")) {
-            if (argc < 3) {
-                rt_kprintf("Usage: ymodem_ota -p <partiton name>.\n");
+        /* change default partition to save firmware */
+        if (!strcmp(argv[i], "-p"))
+        {
+            if (argc <= (i+1))
+            {
+                rt_kprintf("%s", str_usage);
                 return;
-            } else {
-                /* change default partition to save firmware */
-                recv_partition = argv[2];  
             }
-        }else{
-            rt_kprintf("Usage: ymodem_ota -p <partiton name>.\n");
+            recv_partition = argv[i+1];
+            i += 2;
+        }
+        /* change default device to transfer */
+        else if (!strcmp(argv[i], "-t"))
+        {
+            if (argc <= (i+1))
+            {
+                rt_kprintf("%s", str_usage);
+                return;
+            }
+            dev = rt_device_find(argv[i+1]);
+            if (dev == RT_NULL)
+            {
+                rt_kprintf("Device (%s) find error!\n", argv[i+1]);
+                return;
+            }
+            i += 2;
+        }
+        /* NOT supply parameter */
+        else
+        {
+            rt_kprintf("%s", str_usage);
             return;
         }
     }
-
+    if ((dl_part = fal_partition_find(recv_partition)) == RT_NULL)
+    {
+        rt_kprintf("Partition (%s) find error!\n", recv_partition);
+        return;
+    }
+    if (dev != rt_console_get_device()) {enable_output_log = 1;}
+    rt_kprintf("Save firmware on \"%s\" partition with device \"%s\".\n", recv_partition, dev->parent.name);
     rt_kprintf("Warning: Ymodem has started! This operator will not recovery.\n");
     rt_kprintf("Please select the ota firmware file and use Ymodem to send.\n");
 
-    if (!rym_recv_on_device(&rctx, rt_console_get_device(), RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
+    if (!rym_recv_on_device(&rctx, dev, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX,
                             ymodem_on_begin, ymodem_on_data, NULL, RT_TICK_PER_SECOND))
     {
         rt_kprintf("Download firmware to flash success.\n");

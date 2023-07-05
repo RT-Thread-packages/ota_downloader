@@ -36,9 +36,9 @@
 #define HTTP_OTA_URL              PKG_HTTP_OTA_URL
 
 /* the address offset of download partition */
-#ifndef PKG_USING_FAL
+#ifndef RT_USING_FAL
 #error "Please enable and confirgure FAL part."
-#endif /* PKG_USING_FAL */
+#endif /* RT_USING_FAL */
 const struct fal_partition * dl_part = RT_NULL;
 static int begin_offset = 0;
 static int file_size = 0;

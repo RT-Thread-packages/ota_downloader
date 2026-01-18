@@ -68,14 +68,28 @@ static enum rym_code ymodem_on_begin(struct rym_ctx *ctx, rt_uint8_t *buf, rt_si
 
 static enum rym_code ymodem_on_data(struct rym_ctx *ctx, rt_uint8_t *buf, rt_size_t len)
 {
-    /* write data of application to DL partition  */
-    if (fal_partition_write(dl_part, update_file_cur_size, buf, len) < 0)
+    rt_size_t remaining;
+    rt_size_t write_len;
+
+    if (update_file_cur_size >= update_file_total_size)
     {
-        if (enable_output_log) {LOG_E("Firmware download failed! Partition (%s) write data error!", dl_part->name);}
-        return RYM_CODE_CAN;
+        return RYM_CODE_ACK;
     }
 
-    update_file_cur_size += len;
+    remaining = update_file_total_size - update_file_cur_size;
+    write_len = (len < remaining) ? len : remaining;
+
+    /* write only real firmware bytes, skip Ymodem padding */
+    if (write_len > 0)
+    {
+        if (fal_partition_write(dl_part, update_file_cur_size, buf, write_len) < 0)
+        {
+            if (enable_output_log) {LOG_E("Firmware download failed! Partition (%s) write data error!", dl_part->name);}
+            return RYM_CODE_CAN;
+        }
+
+        update_file_cur_size += write_len;
+    }
 
     return RYM_CODE_ACK;
 }
